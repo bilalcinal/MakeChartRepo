@@ -17,11 +17,11 @@ namespace ChartRepoBackend.Controllers
         }
 
         [HttpPost("get-dataset")]
-        public IActionResult GetDataSet([FromBody] DatabaseConnection dbConnection, [FromQuery] string tableName)
+        public IActionResult GetDataSet([FromBody] DatabaseConnection dbConnection, [FromQuery] string tableName, [FromQuery] string columns)
         {
             try
             {
-                var dataSet = _databaseService.GetDataSet(dbConnection, tableName);
+                var dataSet = _databaseService.GetDataSet(dbConnection, tableName, columns);
                 return Ok(dataSet);
             }
             catch (Exception ex)
@@ -45,6 +45,20 @@ namespace ChartRepoBackend.Controllers
                 return BadRequest("Failed to load database objects");
             }
         }
+
+        [HttpPost("get-columns")]
+        public IActionResult GetColumns([FromBody] DatabaseConnection dbConnection, [FromQuery] string tableName)
+        {
+            try
+            {
+                var columns = _databaseService.GetColumns(dbConnection, tableName);
+                return Ok(columns);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: " + ex.Message);
+                return BadRequest("Failed to get columns");
+            }
+        }
     }
 }
-
