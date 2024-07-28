@@ -21,6 +21,11 @@ namespace ChartRepoBackend.Controllers
         {
             try
             {
+                if (string.IsNullOrEmpty(columns))
+                {
+                    return BadRequest("The columns field is required.");
+                }
+
                 var dataSet = _databaseService.GetDataSet(dbConnection, tableName, columns);
                 return Ok(dataSet);
             }
@@ -28,6 +33,23 @@ namespace ChartRepoBackend.Controllers
             {
                 Console.WriteLine("Error: " + ex.Message);
                 return BadRequest("Failed to get dataset");
+            }
+        }
+
+
+
+
+        [HttpPost("get-columns-with-types")]
+        public IActionResult GetColumnsWithTypes([FromBody] DatabaseConnection dbConnection, [FromQuery] string tableName)
+        {
+            try
+            {
+                var columns = _databaseService.GetColumnsWithTypes(dbConnection, tableName);
+                return Ok(columns);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest("Failed to get columns with types");
             }
         }
 
@@ -41,7 +63,6 @@ namespace ChartRepoBackend.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error: " + ex.Message);
                 return BadRequest("Failed to load database objects");
             }
         }
@@ -56,7 +77,6 @@ namespace ChartRepoBackend.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error: " + ex.Message);
                 return BadRequest("Failed to get columns");
             }
         }

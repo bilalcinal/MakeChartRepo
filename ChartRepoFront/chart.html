@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Chart Application</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Dynamic Chart Application</h1>
+        <form id="dbForm">
+            <div class="form-group">
+                <label for="savedDatabases">Select Database:</label>
+                <select class="form-control" id="savedDatabases" required>
+                    <option value="">Select a saved database</option>
+                </select>
+            </div>
+            <button type="button" class="btn btn-primary" id="loadObjectsBtn">Load Objects</button>
+        </form>
+        <div class="form-group">
+            <label for="objectName">Stored Procedure/View/Function:</label>
+            <select class="form-control" id="objectName" name="objectName" required>
+                <option value="">Select an object</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="columnType">Select Column Type:</label>
+            <select class="form-control" id="columnType" name="columnType">
+                <option value="int">Integer</option>
+                <option value="nvarchar">String</option>
+                <option value="bit">Boolean</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="columns">Select Columns:</label>
+            <div id="columns"></div>
+        </div>
+        <form id="chartForm">
+            <div class="form-group">
+                <label for="chartType">Chart Type:</label>
+                <select class="form-control" id="chartType" name="chartType">
+                    <option value="line">Line Chart</option>
+                    <option value="bar">Bar Chart</option>
+                    <option value="radar">Radar Chart</option>
+                    <option value="pie">Pie Chart</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Get Data</button>
+        </form>
+        <canvas id="myChart"></canvas>
+    </div>
+    <script>
+        $(document).ready(function () {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            function loadSavedDatabases() {
+                $.ajax({
+                    url: 'https://localhost:5001/api/Database',
+                    type: 'GET',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    success: function(data) {
+                        let savedDatabases = $('#savedDatabases');
+                        savedDatabases.empty();
+                        savedDatabases.append('<option value="">Select a saved database</option>');
+                        data.forEach(function(db) {
+                            savedDatabases.append(`<option value="${db.id}" data-server="${db.server}" data-database="${db.database}" data-username="${db.username}" data-password="${db.password}">${db.name}</option>`);
+                        });
+                    },
+                    error: function(xhr, status, error) {
+                        toastr.error('Failed to load databases');
+                    }
+                });
+            }
+
+            let chart;
+
+            $('#loadObjectsBtn').on('click', function (event) {
+                event.preventDefault();
+
+                const selectedOption = $('#savedDatabases').find('option:selected');
+                if (!selectedOption.val()) {
+                    toastr.error('Please select a database');
+                    return;
+                }
+
+                const dbConnection = {
+                    server: selectedOption.data('server'),
+                    database: selectedOption.data('database'),
+                    username: selectedOption.data('username'),
+                    password: selectedOption.data('password')
+                };
+
+                console.log('Sending AJAX request to get database objects');
+                console.log('Connection details:', dbConnection);
+
+                $.ajax({
+                    url: 'https://localhost:5001/api/Chart/get-database-objects',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(dbConnection),
+                    success: function (data) {
+                        console.log('Received data:', data);
+                        let objectSelect = $('#objectName');
+                        objectSelect.empty();
+                        objectSelect.append('<option value="">Select an object</option>');
+                        data.forEach(function (object) {
+                            objectSelect.append('<option value="' + object + '">' + object + '</option>');
+                        });
+                        toastr.success('Tables loaded successfully');
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error:', error);
+                        console.error('Status:', status);
+                        console.error('Response:', xhr.responseText);
+                        toastr.error('Failed to load database objects. Please check your connection details.');
+                    }
+                });
+            });
+
+            $('#objectName').on('change', function () {
+                const selectedOption = $('#savedDatabases').find('option:selected');
+                if (!selectedOption.val()) {
+                    toastr.error('Please select a database');
+                    return;
+                }
+
+                const dbConnection = {
+                    server: selectedOption.data('server'),
+                    database: selectedOption.data('database'),
+                    username: selectedOption.data('username'),
+                    password: selectedOption.data('password')
+                };
+
+                let objectName = $('#objectName').val();
+
+                console.log('Sending AJAX request to get columns');
+                console.log('Connection details:', dbConnection);
+                console.log('Object name:', objectName);
+
+                $.ajax({
+                    url: `https://localhost:5001/api/Chart/get-columns-with-types?tableName=${encodeURIComponent(objectName)}`,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(dbConnection),
+                    success: function (data) {
+                        console.log('Received columns:', data);
+                        let columnsDiv = $('#columns');
+                        columnsDiv.empty();
+
+                        let selectedType = $('#columnType').val();
+
+                        data.forEach(function (column) {
+                            if (column.type === selectedType) {
+                                columnsDiv.append(`<div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="${column.name}" id="${column.name}" checked>
+                                    <label class="form-check-label" for="${column.name}">
+                                        ${column.name}
+                                    </label>
+                                </div>`);
+                            }
+                        });
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error:', error);
+                        console.error('Status:', status);
+                        console.error('Response:', xhr.responseText);
+                        toastr.error('Failed to load columns. Please check your connection details.');
+                    }
+                });
+            });
+
+            $('#columnType').on('change', function () {
+                $('#objectName').trigger('change');
+            });
+
+            $('#chartForm').on('submit', function (event) {
+                event.preventDefault();
+
+                const selectedOption = $('#savedDatabases').find('option:selected');
+                if (!selectedOption.val()) {
+                    toastr.error('Please select a database');
+                    return;
+                }
+
+                const dbConnection = {
+                    server: selectedOption.data('server'),
+                    database: selectedOption.data('database'),
+                    username: selectedOption.data('username'),
+                    password: selectedOption.data('password')
+                };
+
+                let objectName = $('#objectName').val();
+                let selectedColumns = $('#columns input:checked').map(function () {
+                    return $(this).val();
+                }).get();
+                let chartType = $('#chartType').val();
+
+                console.log('Sending AJAX request to get dataset');
+                console.log('Connection details:', dbConnection);
+                console.log('Object name:', objectName);
+                console.log('Selected columns:', selectedColumns);
+
+                $.ajax({
+                    url: `https://localhost:5001/api/Chart/get-dataset?tableName=${encodeURIComponent(objectName)}&columns=${encodeURIComponent(selectedColumns.join(','))}`,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(dbConnection),
+                    success: function (data) {
+                        console.log('Received data:', data);
+                        let ctx = $('#myChart')[0].getContext('2d');
+
+                        if (chart) {
+                            chart.destroy();
+                        }
+
+                        chart = new Chart(ctx, {
+                            type: chartType,
+                            data: {
+                                labels: data.labels,
+                                datasets: [{
+                                    label: 'DataSet',
+                                    data: data.data,
+                                    backgroundColor: generateRandomColors(data.data.length),
+                                    borderColor: 'rgba(75, 192, 192, 1)',
+                                    borderWidth: 1
+                                }]
+                            },
+                            options: {
+                                scales: {
+                                    y: {
+                                        beginAtZero: true
+                                    }
+                                }
+                            }
+                        });
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error:', error);
+                        console.error('Status:', status);
+                        console.error('Response:', xhr.responseText);
+                        toastr.error('Failed to fetch data. Please check your connection details and object name.');
+                    }
+                });
+            });
+
+            function generateRandomColors(numColors) {
+                let colors = [];
+                for (let i = 0; i < numColors; i++) {
+                    colors.push(`rgba(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, 0.2)`);
+                }
+                return colors;
+            }
+
+            loadSavedDatabases();
+        });
+    </script>
+</body>
+
+</html>

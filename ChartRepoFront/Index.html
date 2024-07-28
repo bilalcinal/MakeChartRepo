@@ -4,24 +4,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic Chart Application</title>
+    <title>Login/Register</title>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
+    <style>
+        #registerForm {
+            display: none;
+        }
+    </style>
 </head>
 
 <body>
     <div class="container">
-        <h1>Dynamic Chart Application</h1>
-        <form id="dbForm">
-            <div class="form-group">
-                <label for="server">Server:</label>
-                <input type="text" class="form-control" id="server" name="server" required>
-            </div>
-            <div class="form-group">
-                <label for="database">Database:</label>
-                <input type="text" class="form-control" id="database" name="database" required>
-            </div>
+        <h1>Login</h1>
+        <form id="loginForm">
             <div class="form-group">
                 <label for="username">Username:</label>
                 <input type="text" class="form-control" id="username" name="username" required>
@@ -30,33 +28,74 @@
                 <label for="password">Password:</label>
                 <input type="password" class="form-control" id="password" name="password" required>
             </div>
-            <button type="button" class="btn btn-primary" id="loadObjectsBtn">Load Objects</button>
+            <button type="submit" class="btn btn-primary">Login</button>
         </form>
-        <div class="form-group">
-            <label for="objectName">Stored Procedure/View/Function:</label>
-            <select class="form-control" id="objectName" name="objectName" required>
-                <option value="">Select an object</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="columns">Select Columns:</label>
-            <div id="columns"></div>
-        </div>
-        <form id="chartForm">
+        <button id="showRegisterBtn" class="btn btn-secondary mt-3">Register</button>
+
+        <hr>
+        <form id="registerForm">
+            <h1>Register</h1>
             <div class="form-group">
-                <label for="chartType">Chart Type:</label>
-                <select class="form-control" id="chartType" name="chartType">
-                    <option value="line">Line Chart</option>
-                    <option value="bar">Bar Chart</option>
-                    <option value="radar">Radar Chart</option>
-                    <option value="pie">Pie Chart</option>
-                </select>
+                <label for="regUsername">Username:</label>
+                <input type="text" class="form-control" id="regUsername" name="username" required>
             </div>
-            <button type="submit" class="btn btn-primary">Get Data</button>
+            <div class="form-group">
+                <label for="regPassword">Password:</label>
+                <input type="password" class="form-control" id="regPassword" name="password" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Register</button>
         </form>
-        <canvas id="myChart"></canvas>
     </div>
-    <script src="scripts.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#showRegisterBtn').on('click', function() {
+                $('#registerForm').toggle();
+                $('#loginForm').toggle();
+            });
+
+            $('#loginForm').on('submit', function(event) {
+                event.preventDefault();
+                let username = $('#username').val();
+                let password = $('#password').val();
+
+                $.ajax({
+                    url: 'https://localhost:5001/api/User/login',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ username: username, password: password }),
+                    success: function(data) {
+                        toastr.success('Login successful');
+                        localStorage.setItem('token', data.token);
+                        window.location.href = 'dashboard.html';
+                    },
+                    error: function(xhr, status, error) {
+                        toastr.error('Failed to login');
+                    }
+                });
+            });
+
+            $('#registerForm').on('submit', function(event) {
+                event.preventDefault();
+                let username = $('#regUsername').val();
+                let password = $('#regPassword').val();
+
+                $.ajax({
+                    url: 'https://localhost:5001/api/User/register',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ username: username, password: password }),
+                    success: function(data) {
+                        toastr.success('Registration successful');
+                        $('#registerForm').hide();
+                        $('#loginForm').show();
+                    },
+                    error: function(xhr, status, error) {
+                        toastr.error('Failed to register');
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 
 </html>
