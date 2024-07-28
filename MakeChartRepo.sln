@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChartRepoBackend", "ChartRepoBackend\ChartRepoBackend.csproj", "{91CE6485-D006-4152-965C-3919C874E78B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{91CE6485-D006-4152-965C-3919C874E78B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{91CE6485-D006-4152-965C-3919C874E78B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{91CE6485-D006-4152-965C-3919C874E78B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{91CE6485-D006-4152-965C-3919C874E78B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {17161EE7-D84E-4EF1-9770-0E792DB1926A}
+	EndGlobalSection
+EndGlobal
